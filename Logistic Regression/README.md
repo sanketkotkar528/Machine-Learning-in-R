@@ -6,4 +6,4 @@
     
     
         
-$ \frac{\sigma}{\mu} $
+$$ \frac{\sigma}{\mu} $$
