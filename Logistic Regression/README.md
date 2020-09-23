@@ -7,4 +7,4 @@
    probability of getting the result:
     
     
-        p = /frac{1}{1 + exp(-/theta * X)}   
+        $e^{i \pi} = -1$
