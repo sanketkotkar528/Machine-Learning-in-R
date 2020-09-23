@@ -1,0 +1,101 @@
+##  K-N-N Function
+
+# Input to fuction is Train data, Test data and k
+# This function is for the training the K-N-N model
+
+K_N_N<-function(Train,Test,k)
+{
+  Train_1<- data.matrix(Train)
+  Test_1<- data.matrix(Test)
+  # Calculating the Euclidian distance
+  D<-NULL                           
+  for( i in 1:nrow(Test_1) )
+  {
+    
+    B<- matrix( Test_1[i,-(ncol(Test_1)) ] , nrow = nrow(Train_1), ncol = (ncol(Test_1)-1) , byrow = T)
+    C<- sqrt(rowSums((B-Train_1[,-(ncol(Train_1))])^2))
+    D<- c(D,C)
+  }
+  Distance<- matrix(D, nrow = nrow(Test), ncol = nrow(Train), byrow = T)
+  #Predicting the result
+  PREDICT<-NULL
+  for( i in 1:nrow(Distance))
+  {
+    NEAR<- Train[,ncol(Train)][order(Distance[i,])[1:k]]
+    # Function for most repeatative label
+    MODE<-function(x){ return(names(which.max(table(x))) ) }
+    P<- MODE(NEAR)
+    PREDICT<- c(PREDICT,P)
+  }
+  return(PREDICT)  # Output will be result
+}
+#=======================================================================================================================#
+
+## ## Function for Accuracy
+
+Accuracy<-function(Test,Result)
+{
+  CM<- table(Test[,ncol(Test)], Result )
+  TP<- CM[2,2]; TN<- CM[1,1]; FP<- CM[2,1]; FN<- CM[1,2]
+  #Total<- sum(Test[,ncol(Test)]==Result)
+  #Overall_Accuracy <- Total/ncol(Test)
+  MCC<- (((TP*TN)-(FP*FN))/sqrt((TP+FP)*(TP+FN)*(TN+FP)*(TN+FN)))
+  return(MCC)
+}
+
+#=======================================================================================================================#
+
+## K-Fold function for all K i.e 1 to sqrt(nrow(Data))
+
+# Input is Data in required format i.e class label should be at the last column and n is no. of folds you want to make
+# K will be generated 
+
+K_Fold<-function(Data,n)
+{
+  K<-seq(1,ceiling(sqrt(nrow(Data))), 2)
+  All_MEAN<-NULL
+  for( k in K)
+  {
+    All_MCC<-NULL
+    for( f in 0:(n-1) )
+    {
+      Train<- Data[ -(seq( (f*floor(nrow(Data)/n)) +1, (f+1)*(floor(nrow(Data)/n)) ) ), ]
+      Test<- Data[ seq( (f*floor(nrow(Data)/n)) +1, (f+1)*(floor(nrow(Data)/n)) ), ]
+      Result<-K_N_N(Train,Test,k)
+      MCC<-Accuracy(Test,Result)
+      All_MCC<- c(All_MCC,MCC)
+    }
+    MEAN<- mean(All_MCC)
+    All_MEAN<- c(All_MEAN,MEAN)
+    Out<- K[which.max(All_MEAN)]
+  }
+  return(Out)
+}
+#===============================================================================================================#
+
+## K_N_N function for prediction 
+
+# input is train , test , Class_label , k
+K_N_N<- function(Train,Test,Class_Label,k)
+{
+  Train_1<-data.matrix(Train)
+  Test_1<- data.matrix(Test)
+  # Calculating the euclidian distance
+  D<-NULL
+  for( i in 1:nrow(Test_1))
+  {
+    B<- matrix(Test_1[i,], nrow = nrow(Train_1), ncol = ncol(Train_1), byrow = T)
+    C<- sqrt(rowSums((B - Train_1)^2))
+    D<- c(D,C)
+  }
+  Distance<- matrix(D, nrow = nrow(Test_1), ncol = nrow(Train_1), byrow = T)
+  PREDICT<- NULL
+  for( i in 1:nrow(Distance))
+  {
+    NEAR<- Class_Label[order(Distance[i,])[1:k]]
+    MODE<-function(x){ return(names(which.max(table(x)))) }
+    P<- MODE(NEAR)
+    PREDICT<- c(PREDICT,P)
+  }
+  return(PREDICT) 
+}
