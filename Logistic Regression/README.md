@@ -5,6 +5,8 @@
 * Logistic regression is based on the equation,
 
    probability of getting the result:
+   
+    p = 1 / (1 + e^-(XT))
     
     
-        $$ e^{i \pi} = -1 $$
+        
