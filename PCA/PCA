@@ -1,0 +1,33 @@
+#==================================== PCA ===========================#
+
+Raw_Data<- iris[ sample(nrow(iris)),]
+Class<- Raw_Data[,ncol(Raw_Data)]
+Data1<- Raw_Data[,-ncol(Raw_Data)]
+# Mean subtracted matrix
+for( i in 1:ncol(Data1))
+{
+  Data1[,i]<- Data1[,i]-mean(Data1[,i])
+}
+X<- data.matrix(Data1)
+# Transpose of X
+X_Transpose<- t(X)
+# Covarience matrix
+COV_X<- X_Transpose %*% X
+# Calculating the eigen values and eigen vectors
+Eigen_X<- eigen(COV_X)
+# Eigen Vectors
+Eigen_X_Vec<- data.matrix(Eigen_X$vectors)
+# Vector of most information gain
+New_Eigen_X_Vec<- data.matrix(Eigen_X$vectors[ ,which(cumsum(Eigen_X$values)/sum(Eigen_X$values)<= 0.95)])
+# New reduced data
+New_Data<- data.frame(X %*% New_Eigen_X_Vec)
+New_Data$Class_Label<- Class
+
+# Loading the library for random forest
+require(randomForest)
+
+Train<- New_Data[1:120,]
+Test<-  New_Data[121:150,]
+
+Model<- randomForest(Class_Label~.,Train)
+Result<- predict(Model,Test)
