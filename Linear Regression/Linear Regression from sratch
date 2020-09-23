@@ -1,0 +1,63 @@
+# Loading the data
+Data<- iris[sample(nrow(iris)), ]
+
+# Spliting the data into dependent and independent variables
+Y<- as.numeric(Data[,ncol(Data)])
+X<- Data[,-ncol(Data)]
+
+X0<- rep(1,nrow(X))
+X<- cbind(X0,X)
+
+X_Train<- X[1:120, ]
+X_Test<- X[-nrow(X_Train), ]
+Y_Train<- Y[1:nrow(X_Train)]
+Y_Test<- Y[ 121:150]
+
+# Hypothesis Function
+H_Theta<- function(Theta,X_Train)
+{
+  H_Theta<- c()
+  for( i in 1:nrow(X_Train))
+  {
+    H_Theta[i]<- sum(Theta*X_Train[i,])
+  }
+  return(H_Theta)
+}
+
+# Cost Function
+J_Theta<-function(Theta,X_Train,Y_Train)
+{
+  return(sum((H_Theta(Theta,X_Train)-Y)^2)/(2*nrow(X_Train)))
+}
+
+# Function for final values of Theta
+# Input is learning rate , X_Train,Y_Train
+Linear_Regression<-function(Alpha,X_Train,Y_Train)
+{
+  Theta<- rep(0,ncol(X_Train))
+  # Calculating the first cost function
+  J0<- J_Theta(Theta,X_Train,Y_Train)
+  while(T)
+  {
+    for( i in 1:ncol(X_Train))
+    {
+      Theta[i]<- Theta[i]- (Alpha/nrow(X_Train))*sum( (H_Theta(Theta,X_Train)-Y_Train)*X_Train[,i])
+    }
+    J1<- J_Theta(Theta,X_Train,Y_Train)
+    # Calculating the error
+    Error<- J0-J1
+    if( Error<= 0.01)
+      break
+    else
+      J0<- J1
+  }
+  print(Theta)
+}
+
+# Predicting the results
+Model<- Linear_Regression(0.1,X_Train,Y_Train)
+Result<-c()
+for( i in 1:nrow(X_Test))
+{
+  Result[i]<- round(sum(Model*X_Test[i,]))
+}
