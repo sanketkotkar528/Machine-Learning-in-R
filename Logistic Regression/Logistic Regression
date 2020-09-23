@@ -1,0 +1,68 @@
+# The file contains the functions for 'Logistic regression' from scratch
+
+
+# Function of H_Theta
+H_Theta<-function(Theta,X)
+{
+  A<- c()
+  for( i in 1:nrow(X))
+  {
+    B<- sum(Theta*X[i,])
+    A[i]<- 1/( 1 + exp(-B ))
+  }
+  return(A)
+}
+
+# Cost Function 
+J_Theta<-function(Theta,X,Y)
+{
+  return(sum(Y*log(H_Theta(Theta,X)) + (1-Y)*log(1-H_Theta(Theta,X)))/(-nrow(X)))
+}
+
+#============== Logistic Regression Function =================#
+
+# X and Y are dependent and independent variables
+
+Logistic_Regression<-function(Alpha,X,Y)  
+{
+  # Initial Value of Theta
+  Theta<- rep(1,ncol(X))
+  J0<- J_Theta(Theta,X,Y)
+  while(T)
+  {
+    # Using Gradient Descent Method
+    for( i in 1:ncol(X))
+    {
+      Theta[i]<- Theta[i] -(Alpha/nrow(X))*(  sum ((H_Theta(Theta,X)-Y)*X[,i] ) )  
+    }
+    # Calculating the new value of Theta
+    J1<- J_Theta(Theta,X,Y)
+    # Calculating the Error
+    Error<- J0-J1
+    # Checking the error
+    if(Error<=0.01)
+      break
+    else
+      J0<- J1
+  }
+  print(Theta)
+}
+
+
+# Predicting the result
+Model<- Logistic_Regression(Alpha,X_Train,Y_Train)
+
+## For getting thr results wee have to define the threshold
+# It is the point from above all pts are of one class and below are of other class
+Threshold<-      
+Raw_Result<-c()
+for(  i in 1:nrow(X_Test))
+{
+  Raw_Result[i]<- sum(Model*X_Test[i,])
+}
+Result<-c()
+for( i in 1:nrow(X_Test))
+{
+  if(Raw_Result>=Threshold){ Result[i]<- '1'}
+  else if(Raw_Result<Threshold){ Result<- '0'}
+}
