@@ -1,0 +1,142 @@
+#======================================== Random Forest ==================================#
+
+# Import library
+install.packages("rpart.plot")
+install.packages("rpart")
+install.packages("randomForest")
+library(rpart.plot)
+library(randomForest)
+
+# Loading the data of Loan Prediction
+Raw_Train1<- read.csv("Train.csv", stringsAsFactors = F, na.strings = c(""))
+Raw_Test1<- read.csv("Test.csv", stringsAsFactors = FALSE, na.strings = c(""))
+
+Class_Label<- Raw_Train1[ , ncol(Raw_Train1)]
+# removing ID column and class label
+Raw_Train2<- Raw_Train1[, -c(1,ncol(Raw_Train1))]
+Raw_Test2<- Raw_Test1[ , -1]
+# Combining data for prepossing 
+Data1<- rbind(Raw_Train2,Raw_Test2)
+# Filling NA values
+for( i in 1:ncol(Data1))
+{
+  if( is.character(Data1[,i])==T )
+  {
+    Data1[which(is.na(Data1[,i])), i] = names(which.max(table(Data1[,i])))
+  }
+  else if( is.numeric(Data1[,i])==T )
+  {
+    Data1[which(is.na(Data1[,i])), i] = mean(Data1[,i],na.rm = T)
+  }
+}
+# Converting into numeric
+for( i in 1:ncol(Data1))
+{
+  if( is.character(Data1[,i])==T )
+  {
+    Data1[,i] = as.integer(as.factor(Data1[,i]))
+  }
+  else if ( is.numeric(Data1[,i])==T )
+  {
+    Data1[,i] = Data1[,i]
+  }
+}
+# Function for Normalisation
+Normalisation<-function(x){ return( (x-min(x)/(max(x)-min(x)))) }
+# Normalising the data
+D<-NULL
+for( i in 1:ncol(Data1))
+{
+  D1<- Normalisation(Data1[,i])
+  D<-c(D,D1)
+}
+Distance<- matrix(D,nrow = nrow(Data1), ncol = ncol(Data1), byrow = F )
+# Sepereting the original train and test
+Train_Original<- data.frame(Distance[1:nrow(Raw_Train2), ])
+Train_Original$Class_Label<- as.factor(Class_Label)
+Test_Original<- data.frame(Distance[-(1:nrow(Raw_Train2)), ])
+#==============================================================================================================
+
+# Building best model for random forest
+
+# Building Random Forest model for getting the accuracy imporatance
+Rough_Model<- randomForest(Class_Label~., Train_Original, importance = T)
+Imporatance<- importance(Rough_Model)
+# Extracting the importance according to accuracy 
+Accuracy_Importance<- order(Imporatance[,3], decreasing = T)
+# Arranging the data according to the imporatance of accuracy
+Raw_Data<- matrix(0,nrow = nrow(Train_Original), ncol = (ncol(Train_Original)-1))
+for( i in 1:length(Accuracy_Importance))
+{
+  Raw_Data[,i]<- Train_Original[,Accuracy_Importance[i] ]
+}
+Data<- data.frame(Raw_Data)
+Data$Class<- Train_Original[,ncol(Train_Original)]
+# Checking the best set of attributes for the best models
+n<-5
+All_Avg<-NULL
+for( i in 1:(ncol(Data)-1))
+{
+  Acc<-NULL
+  for( f in 0:(n-1))
+  {
+    Train<- Data[ -(seq( (f*floor(nrow(Data)/n)) +1, (f+1)*(floor(nrow(Data)/n)))), c(1:5,ncol(Data)) ]
+    Test<-  Data[   seq( (f*floor(nrow(Data)/n)) +1, (f+1)*(floor(nrow(Data)/n)) ), c(1:5,ncol(Data)) ]
+    
+    Model<- randomForest(Class~.,Train)
+    Predicted_Result<- predict(Model,Test[,-(ncol(Test))])
+    Accuracy<- (sum(Predicted_Result==Test[ , ncol(Test)])/(nrow(Test)))*100
+    Acc<-c(Acc,Accuracy)
+  }
+  MEAN_ACC<-mean(Acc)
+  All_Avg<-c(All_Avg,MEAN_ACC)
+}
+# Printing all average accuracy for all paterns
+print(All_Avg) 
+# Picking up the best set of atributes for getting the best model
+Best_Set<- which.max(All_Avg)
+print(Best_Set)
+# Now we will check for best model for different mtry and different ntree
+M<- c(1:ceiling(sqrt(Best_Set)))   # Mtry
+N<- seq(100,2000,by=100)           # Ntree
+# Selecting best set for getting best ntree and mtry
+K_Fold<- 5
+All_Best_Ntree<-NULL
+for( m in M)
+{
+  All_Avg_Acc<-NULL
+  for( n in N)
+  {
+    All_Acc<-NULL
+    for( f in 0:(K_Fold-1))
+    {
+      Train<- Data[ -(seq( (f*floor(nrow(Data)/n)) +1, (f+1)*(floor(nrow(Data)/n)))), c(1:Best_Set, ncol(Data)) ]
+      Test<-  Data[   seq( (f*floor(nrow(Data)/n)) +1, (f+1)*(floor(nrow(Data)/n)) ), c(1:Best_Set, ncol(Data)) ]
+      
+      Model<- randomForest(Class~.,Train, Mtry = m, Ntree = n)
+      Result<- predict(Model,Test[,-(ncol(Test))])
+      Accuracy<- ((sum(Result==Test[,ncol(Test)]))/(nrow(Test)))*100
+      All_Acc<-c(All_Acc,Accuracy)
+    }
+    Mean_Acc<-mean(All_Acc)
+    All_Avg_Acc<-c(All_Avg_Acc,Mean_Acc)
+  }
+  Best_Ntree<- which.max(All_Avg_Acc)
+  All_Best_Ntree<-c(All_Best_Ntree,Best_Ntree)
+}
+print(All_Best_Ntree)
+# Selecting Best model we will predict our final predictions
+
+Train<- Data[,c(1:Best_Set,ncol(Data))]
+T_O<- matrix(0, nrow = nrow(Test_Original), ncol = (Best_Set))
+for( i in 1:Best_Set)
+{
+  T_O[,i]<- Test_Original[,Accuracy_Importance[i]]
+}
+Test_O<- data.frame(T_O)
+# Building the model of randomforest for final prediction 
+Model_3<- randomForest(Class~.,Train, mtry= 2, ntree = 8000)
+Loan_Status<- predict(Model_3,Test_O)
+Loan_ID<- Raw_Test1[,1]
+Result_3<-data.frame(Loan_ID,Loan_Status)
+
