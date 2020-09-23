@@ -6,3 +6,4 @@
     
     
         
+\frac{\sigma}{\mu}
