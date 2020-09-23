@@ -7,4 +7,4 @@
    probability of getting the result:
     
     
-        $$e^{i \pi} = -1$$
+        $$ e^{i \pi} = -1 $$
