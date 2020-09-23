@@ -1,0 +1,61 @@
+#=============================== Naive Bayse from scratch ===============================#
+
+Raw_Data<- iris[sample(nrow(iris)), ]
+Train<- Raw_Data[1:120,]
+Test<- Raw_Data[121:150,]
+Levels<- levels(Raw_Data[,ncol(Raw_Data)])
+# Calculating the probability of classes in training dataset
+P_1<- sum(Train[,ncol(Train)]==Levels[1])/nrow(Train)  # Probability of class 1
+P_2<- sum(Train[,ncol(Train)]==Levels[2])/nrow(Train)  # Probability of class 2
+P_3<- sum(Train[,ncol(Train)]==Levels[3])/nrow(Train)  # Probability of class 3
+
+# Seperating the examples according to the classes
+Class_1<- Train[which(Train[,ncol(Train)]==Levels[1]), ]
+Class_2<- Train[which(Train[,ncol(Train)]==Levels[2]), ]
+Class_3<- Train[which(Train[,ncol(Train)]==Levels[3]), ]
+# Function for calculating the gaussian probability
+Gaussian_Prob<-function(x,Mu,Sigma)
+{
+  return( (1/sqrt(2*pi*Sigma^2))*exp( ((-1/2)*((x-Mu)^2))/(Sigma^2) ) )
+}
+
+# Calculating the means amd standard deviations of train dataset of each attribute
+
+M_Class_1<-c(); SD_Class_1<-c()
+M_Class_2<-c(); SD_Class_2<-c()
+M_Class_3<-c(); SD_Class_3<-c()
+for( i in 1:(ncol(Train)-1))
+{
+  M_Class_1[i]<- mean(Class_1[,i]) ; SD_Class_1[i]<- sd(Class_1[,i])
+  M_Class_2[i]<- mean(Class_2[,i]) ; SD_Class_2[i]<- sd(Class_2[,i])
+  M_Class_3[i]<- mean(Class_3[,i]) ; SD_Class_3[i]<- sd(Class_3[,i])
+}
+
+# Calculating the Gaussian probabilities for each class of each attributes
+Result_1<-c()
+for( j in 1:nrow(Test))
+{
+  P_Class_1<-c();P_Class_2<-c();P_Class_3<-c()
+  for( i in 1:(ncol(Train)-1))
+  {
+    P_Class_1[i]<- Gaussian_Prob(Test[j,i],M_Class_1[i],SD_Class_1[i])
+    P_Class_2[i]<- Gaussian_Prob(Test[j,i],M_Class_2[i],SD_Class_2[i])
+    P_Class_3[i]<- Gaussian_Prob(Test[j,i],M_Class_3[i],SD_Class_3[i])
+  }
+  # Product of all gaussian probabilities and probability of classes
+  Prob_1<- prod(P_Class_1,P_1)
+  Prob_2<- prod(P_Class_2,P_2)
+  Prob_3<- prod(P_Class_3,P_3)
+  Prob<- c(Prob_1,Prob_2,Prob_3)
+  Result_1[j]<- Levels[which.max(Prob)]
+}
+
+
+# by using library
+require(e1071)
+Model<- naiveBayes(Species~.,Train)
+Pred<- predict(Model,Test)
+
+
+# Conclusion :
+# Predictions by scrach code and by using the library are same
